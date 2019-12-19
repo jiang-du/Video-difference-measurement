@@ -1,5 +1,10 @@
 /*
-	---------- Find the different between frames in videos ----------
+	---------- Video Difference Measurement ----------
+	Measure the difference between frames in videos.
+	The brightness changes is measured using the average change in each pixel and channel respectively for those brighter and darker.
+	Visualization is applied using the length of green blocks.
+	The red value stand for the absolute value of changes.
+
 	1. Support video files with arbitrary size.
 	2. Support real-time camera (experimental option).
 	Copyright (C) 2019, Jiang Du, all rights reserved.
@@ -9,12 +14,9 @@
 #define ENHANCEMENT 5
 #define CAMERA_ONLINE 0
 #define DIY_FILE 1
-#define DEFAULT_INPUT_VID "test_input.mp4"
+#define DEFAULT_INPUT_VID "input.mp4"
 #define DEFAULT_OUTPUT_VID "output.mp4"
 #define DEFAULT_FOURCC 'X','2','6','4'
-// Do NOT uncomment the following 2 lines!!!
-//#define VID_WIDTH 1920
-//#define VID_HEITHT 1080
 
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -22,9 +24,18 @@
 using namespace cv;
 int VID_WIDTH = -1, VID_HEITHT = -1;
 
-int main()
+int main(int argc, char* argv[], char* envp[])
 {
-	char str0[255]="";
+#if (CV_VERSION_MAJOR < 4)
+	printf("Your Opencv version is:");
+	printf(CV_VERSION);
+	printf(". Make sure you are using 4.0 or above.")
+	getchar();
+	return 1;
+#else
+	// Opencv version is OK
+#endif
+	char str0[255] = "";
 	namedWindow("Video", WINDOW_AUTOSIZE);
 	VideoCapture cap;
 #if CAMERA_ONLINE

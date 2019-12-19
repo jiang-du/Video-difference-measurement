@@ -10,7 +10,14 @@ Measure the difference between frames in videos. The brightness changes is measu
 
 - Windows 10 x64
 - Visual Studio 2019
-- OpenCV 4.1.2
+- OpenCV >= 4.0 (recommended 4.1.2)
+- (optional) OpenH264
+
+>For Linux users:
+>
+>If you are using Ubuntu or other linux system, please use OpenCV of the same version. (I haven't tested on my own yet.) A possible tutorial could be found at:
+>
+>https://www.learnopencv.com/install-opencv-4-on-ubuntu-18-04/
 
 ## Preparation
 
@@ -28,6 +35,10 @@ Measure the difference between frames in videos. The brightness changes is measu
 
     ![](./attachments/step2.png)
 
+5. (optional) Download OpenH264 if you would like to employ Open Source H.264 Codec. Available at:
+
+    https://github.com/cisco/openh264/releases
+
 5. Build from `main.cpp`.
 
 ## Usage
@@ -39,3 +50,5 @@ Measure the difference between frames in videos. The brightness changes is measu
     `#define CAMERA_ONLINE 1`
 
 - During running, press any key in video window to quit.
+
+- If you do not provide the filename of the input and output, they are respectively the default values "input.mp4" and "output.mp4".
