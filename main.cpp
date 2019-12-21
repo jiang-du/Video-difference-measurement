@@ -9,20 +9,12 @@
 	2. Support real-time camera (experimental option).
 	Copyright (C) 2019, Jiang Du, all rights reserved.
 */
-#define OUTPUT_FILE
-// Comment "ENHANCEMENT" if not needed
-#define ENHANCEMENT 5
-#define CAMERA_ONLINE 0
-#define DIY_FILE 1
-#define DEFAULT_INPUT_VID "input.mp4"
-#define DEFAULT_OUTPUT_VID "output.mp4"
-#define DEFAULT_FOURCC 'X','2','6','4'
-
+#include "config.h"
+#include "functions.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
 using namespace cv;
-int VID_WIDTH = -1, VID_HEITHT = -1;
 
 int main(int argc, char* argv[], char* envp[])
 {
@@ -38,6 +30,7 @@ int main(int argc, char* argv[], char* envp[])
 	char str0[255] = "";
 	namedWindow("Video", WINDOW_AUTOSIZE);
 	VideoCapture cap;
+	Mat frame, last;
 #if CAMERA_ONLINE
 	// web camera
 	cap.open(0);
@@ -68,22 +61,33 @@ int main(int argc, char* argv[], char* envp[])
 #endif
 	writer.open(str0, writer.fourcc(DEFAULT_FOURCC), 24, size, true);
 #endif // OUTPUT_FILE
-	Mat frame, last;
-	long greater, less, pos, neg, sum;
-	float _greater, _less, _sum;
+	if (!cap.isOpened()) {
+		//error in opening the video input
+		printf("Unable to open video file!\n");
+		return -1;
+	}
+	else
+	{
+		cap >> frame;
+		if (frame.empty()) {
+			printf("No frame.\n");
+			return -2;
+		}
+		else
+		{
+			frame.copyTo(last);
+			printf("Initialized.\n");
+		}
+	}
 	while (1)
 	{
 		cap >> frame;
+		// If no more frame then end
 		if (frame.empty()) break;
-		if (last.empty())
-		{
-			// First frame
-			frame.copyTo(last);
-			printf("Initialized.\n");
-			continue;
-		}
+
 		// calculate difference
-		greater = 0, less = 0, pos = 0, neg = 0, sum = 0;
+		greater = 0, less = 0, pos = 0, neg = 0, summer = 0;
+		// use "summer" instead of sum to avoid being ambigious
 		for (register int i = 0; i < 3 * VID_WIDTH * VID_HEITHT; i++)
 		{
 			if ((*(frame.data + i)) > (*(last.data + i)))
@@ -91,14 +95,14 @@ int main(int argc, char* argv[], char* envp[])
 				// new greater
 				*(last.data + i) = *(frame.data + i) - *(last.data + i);
 				// last matrix stores the diff
-				sum += *(last.data + i);
+				summer += *(last.data + i);
 				greater += *(last.data + i);
 				pos++;
 			}
 			else
 			{
 				*(last.data + i) -= *(frame.data + i);
-				sum += *(last.data + i);
+				summer += *(last.data + i);
 				less += *(last.data + i);
 				neg++;
 			}
@@ -112,7 +116,7 @@ int main(int argc, char* argv[], char* envp[])
 		}
 		_greater = float(greater) / (3 * VID_WIDTH * VID_HEITHT);
 		_less = float(less) / (3 * VID_WIDTH * VID_HEITHT);
-		_sum = float(sum) / (3 * VID_WIDTH * VID_HEITHT);
+		_sum = float(summer) / (3 * VID_WIDTH * VID_HEITHT);
 		printf("Brighter: %f,\tDarker: %f\n", _greater, _less);
 
 		// print rectangle on image
