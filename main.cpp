@@ -11,8 +11,9 @@
 */
 #include "config.h"
 #include "functions.h"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/video.hpp>
 
 using namespace cv;
 
@@ -85,9 +86,36 @@ int main(int argc, char* argv[], char* envp[])
 		// If no more frame then end
 		if (frame.empty()) break;
 
+#ifdef ENABLE_OPTICAL_FLOW
+		// optical flow
+		// use UMat for GPU acceleration
+		UMat OF_last, OF_next;
+		cvtColor(last, OF_last, COLOR_BGR2GRAY);
+		cvtColor(frame, OF_next, COLOR_BGR2GRAY);
+		UMat flow(OF_last.size(), CV_32FC2);
+		calcOpticalFlowFarneback(OF_last, OF_next, flow, 0.5, 3, 15, 3, 5, 1.2, 0);
+		// visualization
+		Mat flow_cpu;
+		flow.copyTo(flow_cpu);
+		Mat flow_parts[2];
+		split(flow_cpu, flow_parts);
+		Mat magnitude, angle, magn_norm;
+		cartToPolar(flow_parts[0], flow_parts[1], magnitude, angle, true);
+		normalize(magnitude, magn_norm, 0.0f, 1.0f, NORM_MINMAX);
+		angle *= ((1.f / 360.f) * (180.f / 255.f));
+		//build hsv image
+		Mat _hsv[3], hsv, hsv8, bgr;
+		_hsv[0] = angle;
+		_hsv[1] = Mat::ones(angle.size(), CV_32F);
+		_hsv[2] = magn_norm;
+		merge(_hsv, 3, hsv);
+		hsv.convertTo(hsv8, CV_8U, 255.0);
+		cvtColor(hsv8, bgr, COLOR_HSV2BGR);
+		imshow("Video", bgr);
+#else // ENABLE_OPTICAL_FLOW
 		// calculate difference
 		greater = 0, less = 0, pos = 0, neg = 0, summer = 0;
-		// use "summer" instead of sum to avoid being ambigious
+		// use "summer" instead of "sum" to avoid being ambigious
 		for (register int i = 0; i < 3 * VID_WIDTH * VID_HEITHT; i++)
 		{
 			if ((*(frame.data + i)) > (*(last.data + i)))
@@ -140,11 +168,19 @@ int main(int argc, char* argv[], char* envp[])
 		putText(last, str0, Point(350, 225), FONT_HERSHEY_COMPLEX, 2, cv::Scalar(0, 0, 255), 2, 8, 0);
 		Rect rect3(540, 190, int(50 * _less), 35);
 		cv::rectangle(last, rect3, Scalar(0, 0, 255), -1, LINE_8, 0);
-
 		imshow("Video", last);
+#endif // ENABLE_OPTICAL_FLOW
+
+
+#ifdef ENABLE_OPTICAL_FLOW
+#ifdef OUTPUT_FILE
+		writer.write(bgr);
+#endif // OUTPUT_FILE
+#else
 #ifdef OUTPUT_FILE
 		writer.write(last);
 #endif // OUTPUT_FILE
+#endif // ENABLE_OPTICAL_FLOW
 		if (waitKey(1) >= 0) break;
 
 		// prepare for next frame

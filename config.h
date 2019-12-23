@@ -7,6 +7,7 @@
 #define OUTPUT_FILE
 // Comment "ENHANCEMENT" if not needed
 #define ENHANCEMENT 5
+#define ENABLE_OPTICAL_FLOW
 #define CAMERA_ONLINE 0
 #define DIY_FILE 1
 #define DEFAULT_INPUT_VID "input.mp4"
