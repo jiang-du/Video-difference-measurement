@@ -32,36 +32,31 @@ int main(int argc, char* argv[], char* envp[])
 	namedWindow("Video", WINDOW_AUTOSIZE);
 	VideoCapture cap;
 	Mat frame, last;
-#if CAMERA_ONLINE
-	// web camera
-	cap.open(0);
-#else
-#if DIY_FILE
+	
+	// Get input filename
 	printf("Input video:");
 	gets_s(str0);
-	// input Enter only
-	if (strlen(str0) < 1) strcpy(str0, DEFAULT_INPUT_VID);
-#else
-	strcpy(str0, DEFAULT_INPUT_VID);
-#endif
-	cap.open(str0);
-#endif // CAMERA_ONLINE
+	// Input Enter only: Open web camera
+	if (strlen(str0) < 1) CAMERA_ONLINE = true;
+	
+	// Try to open the video
+	if (CAMERA_ONLINE) cap.open(0);
+	else cap.open(str0);
+
+	// TODO: check the file readable or camera available
+
 	VID_WIDTH = cap.get(CAP_PROP_FRAME_WIDTH);
 	VID_HEITHT = cap.get(CAP_PROP_FRAME_HEIGHT);
+
 	// write to file or not
-#ifdef OUTPUT_FILE
 	Size size = Size(VID_WIDTH, VID_HEITHT);
 	VideoWriter writer;
-#if DIY_FILE
 	printf("Output Name:");
 	gets_s(str0);
 	// input Enter only
 	if (strlen(str0) < 1) strcpy(str0, DEFAULT_OUTPUT_VID);
-#else
-	strcpy(str0, DEFAULT_OUTPUT_VID);
-#endif
 	writer.open(str0, writer.fourcc(DEFAULT_FOURCC), 24, size, true);
-#endif // OUTPUT_FILE
+
 	if (!cap.isOpened()) {
 		//error in opening the video input
 		printf("Unable to open video file!\n");
@@ -173,13 +168,9 @@ int main(int argc, char* argv[], char* envp[])
 
 
 #ifdef ENABLE_OPTICAL_FLOW
-#ifdef OUTPUT_FILE
-		writer.write(bgr);
-#endif // OUTPUT_FILE
+		if (OUTPUT_FILE) writer.write(bgr);
 #else
-#ifdef OUTPUT_FILE
-		writer.write(last);
-#endif // OUTPUT_FILE
+		if (OUTPUT_FILE) writer.write(last);
 #endif // ENABLE_OPTICAL_FLOW
 		if (waitKey(1) >= 0) break;
 
@@ -187,9 +178,7 @@ int main(int argc, char* argv[], char* envp[])
 		frame.copyTo(last);
 	}
 	cap.release();
-#ifdef OUTPUT_FILE
-	writer.release();
-#endif // OUTPUT_FILE
+	if (OUTPUT_FILE) writer.release();
 	getchar();
 	return 0;
 }

@@ -52,3 +52,15 @@ Measure the difference between frames in videos. The brightness changes is measu
 - During running, press any key in video window to quit.
 
 - If you do not provide the filename of the input and output, they are respectively the default values "input.mp4" and "output.mp4".
+
+## Todo
+
+- [x] Optical flow estimation
+
+- [x] Support GPU acceleration of GPU by default using OpenCL
+
+- [ ] Check the file readable or camera available
+
+- [ ] Process with the arguments
+
+- [ ] Support multi version of OpenCV
