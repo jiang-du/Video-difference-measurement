@@ -53,11 +53,15 @@ Measure the difference between frames in videos. The brightness changes is measu
 
 - If you do not provide the filename of the input and output, they are respectively the default values "input.mp4" and "output.mp4".
 
-## Todo
+## Functions and TODOs
 
-- [x] Optical flow estimation
+- [x] Basic function of video frame difference
+
+- [x] Enable optical flow estimation
 
 - [x] Support GPU acceleration of GPU by default using OpenCL
+
+- [x] Support video resolution downsample
 
 - [ ] Check the file readable or camera available
 

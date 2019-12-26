@@ -11,75 +11,74 @@
 */
 #include "config.h"
 #include "functions.h"
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/video.hpp>
 
 using namespace cv;
 
 int main(int argc, char* argv[], char* envp[])
 {
-#if (CV_VERSION_MAJOR < 4)
-	printf("Your Opencv version is:");
-	printf(CV_VERSION);
-	printf(". Make sure you are using 4.0 or above.")
-	getchar();
-	return 1;
-#else
-	// Opencv version is OK
-#endif
+	if (!CheckOpencvVersionOK()) return -1;
+
 	char str0[255] = "";
-	namedWindow("Video", WINDOW_AUTOSIZE);
+	//namedWindow("Video", WINDOW_AUTOSIZE);
 	VideoCapture cap;
 	Mat frame, last;
-	
+
 	// Get input filename
 	printf("Input video:");
 	gets_s(str0);
 	// Input Enter only: Open web camera
 	if (strlen(str0) < 1) CAMERA_ONLINE = true;
-	
+
 	// Try to open the video
 	if (CAMERA_ONLINE) cap.open(0);
 	else cap.open(str0);
 
-	// TODO: check the file readable or camera available
-
-	VID_WIDTH = cap.get(CAP_PROP_FRAME_WIDTH);
-	VID_HEITHT = cap.get(CAP_PROP_FRAME_HEIGHT);
-
-	// write to file or not
-	Size size = Size(VID_WIDTH, VID_HEITHT);
-	VideoWriter writer;
-	printf("Output Name:");
-	gets_s(str0);
-	// input Enter only
-	if (strlen(str0) < 1) strcpy(str0, DEFAULT_OUTPUT_VID);
-	writer.open(str0, writer.fourcc(DEFAULT_FOURCC), 24, size, true);
-
+	// check the file readable or camera available
 	if (!cap.isOpened()) {
 		//error in opening the video input
 		printf("Unable to open video file!\n");
 		return -1;
 	}
-	else
-	{
-		cap >> frame;
-		if (frame.empty()) {
-			printf("No frame.\n");
-			return -2;
-		}
-		else
-		{
-			frame.copyTo(last);
-			printf("Initialized.\n");
-		}
+
+	// check whether the video has frame
+	cap >> frame;
+	if (frame.empty()) {
+		printf("No frame.\n");
+		return -2;
 	}
+
+	VID_WIDTH = cap.get(CAP_PROP_FRAME_WIDTH);
+	VID_HEIGHT = cap.get(CAP_PROP_FRAME_HEIGHT);
+
+	// downsample
+#if DOWNSAMPLE
+	VID_WIDTH /= 2;
+	VID_HEIGHT /= 2;
+	resize(frame, frame, cv::Size(VID_WIDTH, VID_HEIGHT), (0, 0), (0, 0), INTER_LINEAR);
+#endif //DOWNSAMPLE
+
+	frame.copyTo(last);
+	printf("Initialized.\n");
+
+	// write to file or not
+	Size size = Size(VID_WIDTH, VID_HEIGHT);
+	VideoWriter writer;
+	printf("Output Name:");
+	gets_s(str0);
+	// input Enter only
+	if (strlen(str0) < 1) strcpy(str0, DEFAULT_OUTPUT_VID);
+	writer.open(str0, writer.fourcc(DEFAULT_FOURCC), 24, size, false);
+
 	while (1)
 	{
 		cap >> frame;
 		// If no more frame then end
 		if (frame.empty()) break;
+
+		// downsample
+#if DOWNSAMPLE
+		resize(frame, frame, cv::Size(VID_WIDTH, VID_HEIGHT), (0, 0), (0, 0), INTER_LINEAR);
+#endif //DOWNSAMPLE
 
 #ifdef ENABLE_OPTICAL_FLOW
 		// optical flow
@@ -89,6 +88,7 @@ int main(int argc, char* argv[], char* envp[])
 		cvtColor(frame, OF_next, COLOR_BGR2GRAY);
 		UMat flow(OF_last.size(), CV_32FC2);
 		calcOpticalFlowFarneback(OF_last, OF_next, flow, 0.5, 3, 15, 3, 5, 1.2, 0);
+#if 0
 		// visualization
 		Mat flow_cpu;
 		flow.copyTo(flow_cpu);
@@ -107,11 +107,32 @@ int main(int argc, char* argv[], char* envp[])
 		hsv.convertTo(hsv8, CV_8U, 255.0);
 		cvtColor(hsv8, bgr, COLOR_HSV2BGR);
 		imshow("Video", bgr);
+		//if (OUTPUT_FILE) writer.write(bgr);
+#else
+		Mat flow_cpu;
+		flow.copyTo(flow_cpu);
+		/*
+		Mat flow_part;
+		flow_part.create(VID_WIDTH, VID_HEIGHT, CV_8UC1);
+		for (int i = 0; i < VID_WIDTH * VID_HEIGHT; i++)
+		{
+			*(flow_part.data + i) = *(flow_cpu.data + 2 * i);
+		}
+		imshow("Video", flow_part);
+		printf("Frame\n");
+		if (OUTPUT_FILE) writer.write(flow_part);
+		*/
+		Mat flow_parts[2];
+		split(flow_cpu, flow_parts);
+		imshow("Video", flow_parts[0]);
+		printf("Frame\n");
+		if (OUTPUT_FILE) writer.write(flow_parts[0]);
+#endif // 0
 #else // ENABLE_OPTICAL_FLOW
 		// calculate difference
 		greater = 0, less = 0, pos = 0, neg = 0, summer = 0;
 		// use "summer" instead of "sum" to avoid being ambigious
-		for (register int i = 0; i < 3 * VID_WIDTH * VID_HEITHT; i++)
+		for (register int i = 0; i < 3 * VID_WIDTH * VID_HEIGHT; i++)
 		{
 			if ((*(frame.data + i)) > (*(last.data + i)))
 			{
@@ -137,9 +158,9 @@ int main(int argc, char* argv[], char* envp[])
 #endif // ENHANCEMENT
 
 		}
-		_greater = float(greater) / (3 * VID_WIDTH * VID_HEITHT);
-		_less = float(less) / (3 * VID_WIDTH * VID_HEITHT);
-		_sum = float(summer) / (3 * VID_WIDTH * VID_HEITHT);
+		_greater = float(greater) / (3 * VID_WIDTH * VID_HEIGHT);
+		_less = float(less) / (3 * VID_WIDTH * VID_HEIGHT);
+		_sum = float(summer) / (3 * VID_WIDTH * VID_HEIGHT);
 		printf("Brighter: %f,\tDarker: %f\n", _greater, _less);
 
 		// print rectangle on image
@@ -164,14 +185,9 @@ int main(int argc, char* argv[], char* envp[])
 		Rect rect3(540, 190, int(50 * _less), 35);
 		cv::rectangle(last, rect3, Scalar(0, 0, 255), -1, LINE_8, 0);
 		imshow("Video", last);
-#endif // ENABLE_OPTICAL_FLOW
-
-
-#ifdef ENABLE_OPTICAL_FLOW
-		if (OUTPUT_FILE) writer.write(bgr);
-#else
 		if (OUTPUT_FILE) writer.write(last);
 #endif // ENABLE_OPTICAL_FLOW
+
 		if (waitKey(1) >= 0) break;
 
 		// prepare for next frame
@@ -179,6 +195,5 @@ int main(int argc, char* argv[], char* envp[])
 	}
 	cap.release();
 	if (OUTPUT_FILE) writer.release();
-	getchar();
 	return 0;
 }
