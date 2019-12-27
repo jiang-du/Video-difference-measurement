@@ -63,8 +63,16 @@ Measure the difference between frames in videos. The brightness changes is measu
 
 - [x] Support video resolution downsample
 
-- [ ] Check the file readable or camera available
+    - [ ] Downsample only when optical flow estimation
+
+    - [ ] Automantic down according to resolution
+
+- [x] Check the file readable or camera available
 
 - [ ] Process with the arguments
 
 - [ ] Support multi version of OpenCV
+
+    - [x] OpenCV 4.2 (>=4.0)
+
+    - [ ] Opencv 3.x (not installed)

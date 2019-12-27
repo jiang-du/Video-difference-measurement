@@ -10,7 +10,7 @@
 	Copyright (C) 2019, Jiang Du, all rights reserved.
 */
 #include "config.h"
-#include "functions.h"
+#include "functions.hpp"
 
 using namespace cv;
 
