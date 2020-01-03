@@ -63,7 +63,7 @@ Measure the difference between frames in videos. The brightness changes is measu
 
 - [x] Support video resolution downsample
 
-    - [ ] Downsample only when optical flow estimation
+    - [x] Downsample only when optical flow estimation
 
     - [ ] Automantic down according to resolution
 

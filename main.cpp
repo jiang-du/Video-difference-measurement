@@ -67,7 +67,7 @@ int main(int argc, char* argv[], char* envp[])
 	gets_s(str0);
 	// input Enter only
 	if (strlen(str0) < 1) strcpy(str0, DEFAULT_OUTPUT_VID);
-	writer.open(str0, writer.fourcc(DEFAULT_FOURCC), 24, size, false);
+	writer.open(str0, writer.fourcc(DEFAULT_FOURCC), 24, size, !(ENABLE_OPTICAL_FLOW && (!VISUALIZE_OF_DIRECTION)));
 
 	while (1)
 	{
@@ -80,7 +80,7 @@ int main(int argc, char* argv[], char* envp[])
 		resize(frame, frame, cv::Size(VID_WIDTH, VID_HEIGHT), (0, 0), (0, 0), INTER_LINEAR);
 #endif //DOWNSAMPLE
 
-#ifdef ENABLE_OPTICAL_FLOW
+#if ENABLE_OPTICAL_FLOW
 		// optical flow
 		// use UMat for GPU acceleration
 		UMat OF_last, OF_next;
@@ -88,7 +88,7 @@ int main(int argc, char* argv[], char* envp[])
 		cvtColor(frame, OF_next, COLOR_BGR2GRAY);
 		UMat flow(OF_last.size(), CV_32FC2);
 		calcOpticalFlowFarneback(OF_last, OF_next, flow, 0.5, 3, 15, 3, 5, 1.2, 0);
-#if 0
+#if VISUALIZE_OF_DIRECTION
 		// visualization
 		Mat flow_cpu;
 		flow.copyTo(flow_cpu);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[], char* envp[])
 		imshow("Video", flow_parts[0]);
 		printf("Frame\n");
 		if (OUTPUT_FILE) writer.write(flow_parts[0]);
-#endif // 0
+#endif // VISUALIZE_OF_DIRECTION
 #else // ENABLE_OPTICAL_FLOW
 		// calculate difference
 		greater = 0, less = 0, pos = 0, neg = 0, summer = 0;
